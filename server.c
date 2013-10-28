@@ -16,28 +16,28 @@
 #include <sys/stat.h>
 
 
-void error(char *msg)
-{
+   void error(char *msg)
+   {
     perror(msg);
     exit(1);
-}
+  }
 
 // Primitive http request format; should be enough for the spec in this class
-struct request {
-  char *type;
-  char *file;
-  char *host;
-  char *connection;
-  char *accept;
-  char *user_agent;
-};
+  struct request {
+    char *type;
+    char *file;
+    char *host;
+    char *connection;
+    char *accept;
+    char *user_agent;
+  };
 
 // function to form the request struct from an incoming string
-struct request *parse_http_request(char* in) {
-  struct request *r = malloc(sizeof(struct request));
-  char *t = strstr(in, "GET");
-  if (!t) return NULL;
-  r->type = strndup(t, 3);
+  struct request *parse_http_request(char* in) {
+    struct request *r = malloc(sizeof(struct request));
+    char *t = strstr(in, "GET");
+    if (!t) return NULL;
+    r->type = strndup(t, 3);
 
   char* f = strstr(in, "/"); //get the requested file, always at least "/"
   if (!f) return NULL;
@@ -83,17 +83,17 @@ struct request *parse_http_request(char* in) {
 
 int main(int argc, char *argv[])
 {
-     int sockfd, newsockfd, portno, pid;
-     socklen_t clilen;
-     struct sockaddr_in serv_addr, cli_addr;
+ int sockfd, newsockfd, portno, pid;
+ socklen_t clilen;
+ struct sockaddr_in serv_addr, cli_addr;
 
-     if (argc < 2) {
-         fprintf(stderr,"ERROR, no port provided\n");
-         exit(1);
-     }
+ if (argc < 2) {
+   fprintf(stderr,"ERROR, no port provided\n");
+   exit(1);
+ }
      sockfd = socket(AF_INET, SOCK_STREAM, 0);	//create socket
      if (sockfd < 0)
-        error("ERROR opening socket");
+      error("ERROR opening socket");
      memset((char *) &serv_addr, 0, sizeof(serv_addr));	//reset memory
      //fill in address info
      portno = atoi(argv[1]);
@@ -102,8 +102,8 @@ int main(int argc, char *argv[])
      serv_addr.sin_port = htons(portno);
 
      if (bind(sockfd, (struct sockaddr *) &serv_addr,
-              sizeof(serv_addr)) < 0)
-              error("ERROR on binding");
+      sizeof(serv_addr)) < 0)
+      error("ERROR on binding");
 
      listen(sockfd,5);	//5 simultaneous connection at most
 
@@ -114,17 +114,17 @@ int main(int argc, char *argv[])
        error("ERROR on accept");
 
      int n;
-   	 char buffer[256];
+     char buffer[256];
 
    	 memset(buffer, 0, 256);	//reset memory
 
  		 //read client's message
    	 n = read(newsockfd,buffer,255);
    	 if (n < 0) error("ERROR reading from socket");
-     struct request *formattedRequest = parse_http_request(buffer);
+      struct request *formattedRequest = parse_http_request(buffer);
      // we have formatted the request, now we need to get the filename to open
-     char* filename = formattedRequest->file;
-     char filepath[256];
+      char* filename = formattedRequest->file;
+      char filepath[256];
      getcwd(filepath, sizeof(filepath)); //first, get the pwd
      strcat(filepath, filename); //next, the name of the file
      printf("File path: %s\n", filepath);
@@ -140,49 +140,49 @@ int main(int argc, char *argv[])
       printf("Couldn't access the file\n");
       strcpy(b, "<!doctype html><html><head><title>404</title></head><body><h1>404: Page not found.</h1></body></html>\0");
       filesize = strlen(b);
-     }
-     else {
-        printf("Found the file! ");
+    }
+    else {
+      printf("Found the file! ");
         // need to check if a directory
-        struct stat st_buf;
+      struct stat st_buf;
 
-        int status = stat (filepath, &st_buf);
-        if (status != 0) {
-            printf ("Error");
-            return 1;
-        }
-        // directory
-        if (S_ISDIR (st_buf.st_mode)) {
-            printf ("Directory.\n");
-            strcpy(b, "<!doctype html><html><head><title>404</title></head><body><h1>Trying to access a directory.</h1></body></html>\0");
-            filesize = strlen(b);
-        }
-        // regular file. Serve it buddy
-        if (S_ISREG (st_buf.st_mode)) {
-            printf ("Regular file.\n");
-
-
-          filesize = 0;
-          int rc = getc(fp);
-          for (rc; rc != EOF; rc = getc(fp)) {
-            b[filesize] = (char)rc;
-            filesize++;
-          }
-          b[filesize] = '\0';
-        }
+      int status = stat (filepath, &st_buf);
+      if (status != 0) {
+        printf ("Error");
+        return 1;
       }
-      printf("%s\n", b);
-     	printf("Here is the message: %s\n",buffer);
+        // directory
+      if (S_ISDIR (st_buf.st_mode)) {
+        printf ("Directory.\n");
+        strcpy(b, "<!doctype html><html><head><title>404</title></head><body><h1>Trying to access a directory.</h1></body></html>\0");
+        filesize = strlen(b);
+      }
+        // regular file. Serve it buddy
+      if (S_ISREG (st_buf.st_mode)) {
+        printf ("Regular file.\n");
+
+
+        filesize = 0;
+        int rc = getc(fp);
+        for (rc; rc != EOF; rc = getc(fp)) {
+          b[filesize] = (char)rc;
+          filesize++;
+        }
+        b[filesize] = '\0';
+      }
+    }
+    printf("%s\n", b);
+    printf("Here is the message: %s\n",buffer);
 
    	 //reply to client
    	 //n = write(newsockfd,"I got your message",18);
-     n = write(newsockfd, b, filesize);
-   	 if (n < 0) error("ERROR writing to socket");
+    n = write(newsockfd, b, filesize);
+    if (n < 0) error("ERROR writing to socket");
 
 
      close(newsockfd);//close connection
      close(sockfd);
 
      return 0;
-}
+   }
 
